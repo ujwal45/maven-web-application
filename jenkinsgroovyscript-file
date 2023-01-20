@@ -1,0 +1,27 @@
+node {
+properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), [$class: 'JobLocalConfiguration', changeReasonComment: ''], pipelineTriggers([pollSCM('* * * * *')])])    
+    
+def mavenHome = tool name:'maven3.8.6'
+
+stage('Checkout'){
+    git credentialsId: 'b2fd9594-414e-4791-ba7d-9b3c11509d1e', url: 'https://github.com/ujwal45/maven-web-application.git'
+}
+
+stage('Buikd') {
+    sh "${mavenHome}/bin/mvn clean package"
+}
+
+stage('sonaeQubereport'){
+    sh "${mavenHome}/bin/mvn clean sonar:sonar"
+}
+
+stage('ArtifactoryRepo'){
+    sh "${mavenHome}/bin/mvn clean deploy"
+}
+
+stage('DeployapptoTomCat'){
+    sshagent(['12a5d402-2e18-423f-8aad-eb2c6ade6688']) {
+ sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@172.31.1.69:/opt/apache-tomcat-9.0.71/webapps/"   // some block
+}
+}
+  }
